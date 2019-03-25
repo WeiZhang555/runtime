@@ -9,7 +9,6 @@ package virtcontainers
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -18,9 +17,6 @@ import (
 	"time"
 
 	"github.com/containerd/cgroups"
-	"github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
-	"github.com/kata-containers/runtime/virtcontainers/types"
-	"github.com/kata-containers/runtime/virtcontainers/utils"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -28,7 +24,10 @@ import (
 
 	"github.com/kata-containers/runtime/virtcontainers/device/config"
 	"github.com/kata-containers/runtime/virtcontainers/device/manager"
+	vctypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 	"github.com/kata-containers/runtime/virtcontainers/store"
+	"github.com/kata-containers/runtime/virtcontainers/types"
+	"github.com/kata-containers/runtime/virtcontainers/utils"
 )
 
 // https://github.com/torvalds/linux/blob/master/include/uapi/linux/major.h
@@ -74,6 +73,7 @@ type ContainerStatus struct {
 	PID       int
 	StartTime time.Time
 	RootFs    string
+	Spec      *vctypes.CompatOCISpec `json:"-"`
 
 	// Annotations allow clients to store arbitrary values,
 	// for example to add additional status values required
@@ -228,6 +228,9 @@ type ContainerConfig struct {
 
 	// Resources container resources
 	Resources specs.LinuxResources
+
+	// Spec of container
+	Spec *vctypes.CompatOCISpec
 }
 
 // valid checks that the container configuration is valid.
@@ -1267,16 +1270,9 @@ func (c *Container) detachDevices() error {
 
 // creates a new cgroup and return the cgroups path
 func (c *Container) newCgroups() error {
-	ann := c.GetAnnotations()
-
-	config, ok := ann[annotations.ConfigJSONKey]
-	if !ok {
-		return fmt.Errorf("Could not find json config in annotations")
-	}
-
-	var spec specs.Spec
-	if err := json.Unmarshal([]byte(config), &spec); err != nil {
-		return err
+	spec := c.config.Spec
+	if spec == nil {
+		return errorMissingOCISpec
 	}
 
 	// https://github.com/kata-containers/runtime/issues/168

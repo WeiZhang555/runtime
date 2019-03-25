@@ -40,7 +40,7 @@ func create(ctx context.Context, s *service, r *taskAPI.CreateTaskRequest, netns
 		return nil, err
 	}
 
-	containerType, err := ociSpec.ContainerType()
+	containerType, err := oci.ContainerType(&ociSpec)
 	if err != nil {
 		return nil, err
 	}

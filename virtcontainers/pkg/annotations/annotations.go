@@ -42,7 +42,7 @@ const (
 	AssetHashType = vcAnnotationsPrefix + "AssetHashType"
 
 	// ConfigJSONKey is the annotation key to fetch the OCI configuration.
-	ConfigJSONKey = vcAnnotationsPrefix + "pkg.oci.config"
+	//ConfigJSONKey = vcAnnotationsPrefix + "pkg.oci.config"
 
 	// BundlePathKey is the annotation key to fetch the OCI configuration file path.
 	BundlePathKey = vcAnnotationsPrefix + "pkg.oci.bundle_path"

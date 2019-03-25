@@ -1172,12 +1172,11 @@ func (s *Sandbox) StatusContainer(containerID string) (ContainerStatus, error) {
 	for id, c := range s.containers {
 		if id == containerID {
 			return ContainerStatus{
-				ID:          c.id,
-				State:       c.state,
-				PID:         c.process.Pid,
-				StartTime:   c.process.StartTime,
-				RootFs:      c.config.RootFs,
-				Annotations: c.config.Annotations,
+				ID:        c.id,
+				State:     c.state,
+				PID:       c.process.Pid,
+				StartTime: c.process.StartTime,
+				RootFs:    c.config.RootFs,
 			}, nil
 		}
 	}

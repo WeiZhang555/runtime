@@ -16,6 +16,7 @@ import (
 
 	"github.com/kata-containers/runtime/pkg/katautils"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
+	vctypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 	"github.com/kata-containers/runtime/virtcontainers/types"
 
 	specs "github.com/opencontainers/runtime-spec/specs-go"
@@ -23,7 +24,7 @@ import (
 )
 
 type execParams struct {
-	ociProcess   oci.CompatOCIProcess
+	ociProcess   vctypes.CompatOCIProcess
 	cID          string
 	pidFile      string
 	console      string
@@ -119,7 +120,7 @@ EXAMPLE:
 	},
 }
 
-func generateExecParams(context *cli.Context, specProcess *oci.CompatOCIProcess) (execParams, error) {
+func generateExecParams(context *cli.Context, specProcess *vctypes.CompatOCIProcess) (execParams, error) {
 	ctxArgs := context.Args()
 
 	params := execParams{
@@ -133,7 +134,7 @@ func generateExecParams(context *cli.Context, specProcess *oci.CompatOCIProcess)
 	}
 
 	if context.String("process") != "" {
-		var ociProcess oci.CompatOCIProcess
+		var ociProcess vctypes.CompatOCIProcess
 
 		fileContent, err := ioutil.ReadFile(context.String("process"))
 		if err != nil {
@@ -209,9 +210,9 @@ func execute(ctx context.Context, context *cli.Context) error {
 	span.SetTag("sandbox", sandboxID)
 
 	// Retrieve OCI spec configuration.
-	ociSpec, err := oci.GetOCIConfig(status)
-	if err != nil {
-		return err
+	ociSpec := status.Spec
+	if ociSpec == nil {
+		return fmt.Errorf("OCI spec not found")
 	}
 
 	params, err := generateExecParams(context, ociSpec.Process)

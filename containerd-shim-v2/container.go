@@ -14,13 +14,13 @@ import (
 	taskAPI "github.com/containerd/containerd/runtime/v2/task"
 
 	vc "github.com/kata-containers/runtime/virtcontainers"
-	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
+	vctypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 )
 
 type container struct {
 	s        *service
 	ttyio    *ttyIO
-	spec     *oci.CompatOCISpec
+	spec     *vctypes.CompatOCISpec
 	time     time.Time
 	execs    map[string]*exec
 	exitIOch chan struct{}
@@ -37,14 +37,14 @@ type container struct {
 	terminal bool
 }
 
-func newContainer(s *service, r *taskAPI.CreateTaskRequest, containerType vc.ContainerType, spec *oci.CompatOCISpec) (*container, error) {
+func newContainer(s *service, r *taskAPI.CreateTaskRequest, containerType vc.ContainerType, spec *vctypes.CompatOCISpec) (*container, error) {
 	if r == nil {
 		return nil, errdefs.ToGRPCf(errdefs.ErrInvalidArgument, " CreateTaskRequest points to nil")
 	}
 
 	// in order to avoid deferencing a nil pointer in test
 	if spec == nil {
-		spec = &oci.CompatOCISpec{}
+		spec = &vctypes.CompatOCISpec{}
 	}
 
 	c := &container{

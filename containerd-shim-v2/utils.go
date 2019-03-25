@@ -19,6 +19,7 @@ import (
 	"github.com/kata-containers/runtime/pkg/katautils"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
+	vctypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
@@ -127,13 +128,13 @@ func getAddress(ctx context.Context, bundlePath, id string) (string, error) {
 		return "", err
 	}
 
-	containerType, err := ociSpec.ContainerType()
+	containerType, err := oci.ContainerType(&ociSpec)
 	if err != nil {
 		return "", err
 	}
 
 	if containerType == vc.PodContainer {
-		sandboxID, err := ociSpec.SandboxID()
+		sandboxID, err := oci.SandboxID(&ociSpec)
 		if err != nil {
 			return "", err
 		}
@@ -159,7 +160,7 @@ func noNeedForOutput(detach bool, tty bool) bool {
 	return true
 }
 
-func removeNamespace(s *oci.CompatOCISpec, nsType specs.LinuxNamespaceType) {
+func removeNamespace(s *vctypes.CompatOCISpec, nsType specs.LinuxNamespaceType) {
 	for i, n := range s.Linux.Namespaces {
 		if n.Type == nsType {
 			s.Linux.Namespaces = append(s.Linux.Namespaces[:i], s.Linux.Namespaces[i+1:]...)

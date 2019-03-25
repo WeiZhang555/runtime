@@ -78,9 +78,9 @@ func start(ctx context.Context, containerID string) (vc.VCSandbox, error) {
 		return nil, err
 	}
 
-	ociSpec, err := oci.GetOCIConfig(status)
-	if err != nil {
-		return nil, err
+	ociSpec := status.Spec
+	if ociSpec == nil {
+		return nil, fmt.Errorf("OCI spec not found")
 	}
 
 	var sandbox vc.VCSandbox
@@ -103,7 +103,7 @@ func start(ctx context.Context, containerID string) (vc.VCSandbox, error) {
 
 	// Run post-start OCI hooks.
 	err = katautils.EnterNetNS(sandbox.GetNetNs(), func() error {
-		return katautils.PostStartHooks(ctx, ociSpec, sandboxID, status.Annotations[vcAnnot.BundlePathKey])
+		return katautils.PostStartHooks(ctx, *ociSpec, sandboxID, status.Annotations[vcAnnot.BundlePathKey])
 	})
 	if err != nil {
 		return nil, err

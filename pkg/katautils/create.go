@@ -13,6 +13,7 @@ import (
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	vf "github.com/kata-containers/runtime/virtcontainers/factory"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
+	vctypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 )
 
 // GetKernelParamsFunc use a variable to allow tests to modify its value
@@ -159,7 +160,7 @@ func HandleFactory(ctx context.Context, vci vc.VC, runtimeConfig *oci.RuntimeCon
 // For the given pod ephemeral volume is created only once
 // backed by tmpfs inside the VM. For successive containers
 // of the same pod the already existing volume is reused.
-func SetEphemeralStorageType(ociSpec oci.CompatOCISpec) oci.CompatOCISpec {
+func SetEphemeralStorageType(ociSpec vctypes.CompatOCISpec) vctypes.CompatOCISpec {
 	for idx, mnt := range ociSpec.Mounts {
 		if IsEphemeralStorage(mnt.Source) {
 			ociSpec.Mounts[idx].Type = "ephemeral"
@@ -169,7 +170,7 @@ func SetEphemeralStorageType(ociSpec oci.CompatOCISpec) oci.CompatOCISpec {
 }
 
 // CreateSandbox create a sandbox container
-func CreateSandbox(ctx context.Context, vci vc.VC, ociSpec oci.CompatOCISpec, runtimeConfig oci.RuntimeConfig,
+func CreateSandbox(ctx context.Context, vci vc.VC, ociSpec vctypes.CompatOCISpec, runtimeConfig oci.RuntimeConfig,
 	containerID, bundlePath, console string, disableOutput, systemdCgroup, builtIn bool) (vc.VCSandbox, vc.Process, error) {
 	span, ctx := Trace(ctx, "createSandbox")
 	defer span.Finish()
@@ -223,7 +224,7 @@ func CreateSandbox(ctx context.Context, vci vc.VC, ociSpec oci.CompatOCISpec, ru
 }
 
 // CreateContainer create a container
-func CreateContainer(ctx context.Context, vci vc.VC, sandbox vc.VCSandbox, ociSpec oci.CompatOCISpec, containerID, bundlePath, console string, disableOutput, builtIn bool) (vc.Process, error) {
+func CreateContainer(ctx context.Context, vci vc.VC, sandbox vc.VCSandbox, ociSpec vctypes.CompatOCISpec, containerID, bundlePath, console string, disableOutput, builtIn bool) (vc.Process, error) {
 	var c vc.VCContainer
 
 	span, ctx := Trace(ctx, "createContainer")
@@ -236,7 +237,7 @@ func CreateContainer(ctx context.Context, vci vc.VC, sandbox vc.VCSandbox, ociSp
 		return vc.Process{}, err
 	}
 
-	sandboxID, err := ociSpec.SandboxID()
+	sandboxID, err := oci.SandboxID(&ociSpec)
 	if err != nil {
 		return vc.Process{}, err
 	}

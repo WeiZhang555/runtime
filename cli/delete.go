@@ -96,9 +96,9 @@ func delete(ctx context.Context, containerID string, force bool) error {
 	}
 
 	// Retrieve OCI spec configuration.
-	ociSpec, err := oci.GetOCIConfig(status)
-	if err != nil {
-		return err
+	ociSpec := status.Spec
+	if ociSpec == nil {
+		return fmt.Errorf("OCI spec not found")
 	}
 
 	forceStop := false
@@ -124,7 +124,7 @@ func delete(ctx context.Context, containerID string, force bool) error {
 	}
 
 	// Run post-stop OCI hooks.
-	if err := katautils.PostStopHooks(ctx, ociSpec, sandboxID, status.Annotations[vcAnnot.BundlePathKey]); err != nil {
+	if err := katautils.PostStopHooks(ctx, *ociSpec, sandboxID, status.Annotations[vcAnnot.BundlePathKey]); err != nil {
 		return err
 	}
 

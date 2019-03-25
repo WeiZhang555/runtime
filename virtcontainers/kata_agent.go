@@ -23,7 +23,6 @@ import (
 	kataclient "github.com/kata-containers/agent/protocols/client"
 	"github.com/kata-containers/agent/protocols/grpc"
 	"github.com/kata-containers/runtime/virtcontainers/device/config"
-	vcAnnotations "github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
 	ns "github.com/kata-containers/runtime/virtcontainers/pkg/nsenter"
 	vcTypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/uuid"
@@ -993,14 +992,16 @@ func (k *kataAgent) createContainer(sandbox *Sandbox, c *Container) (p *Process,
 	span, _ := k.trace("createContainer")
 	defer span.Finish()
 
-	ociSpecJSON, ok := c.config.Annotations[vcAnnotations.ConfigJSONKey]
-	if !ok {
-		return nil, errorMissingOCISpec
-	}
+	var (
+		ctrStorages []*grpc.Storage
+		ctrDevices  []*grpc.Device
+		rootfs      *grpc.Storage
+	)
 
-	var ctrStorages []*grpc.Storage
-	var ctrDevices []*grpc.Device
-	var rootfs *grpc.Storage
+	ociSpec, err := convertOCISpec(c.config.Spec)
+	if err != nil {
+		return nil, err
+	}
 
 	// This is the guest absolute root path for that container.
 	rootPathParent := filepath.Join(kataGuestSharedDir, c.id)
@@ -1022,11 +1023,6 @@ func (k *kataAgent) createContainer(sandbox *Sandbox, c *Container) (p *Process,
 		// want the agent to mount it into the right location
 		// (kataGuestSharedDir/ctrID/
 		ctrStorages = append(ctrStorages, rootfs)
-	}
-
-	ociSpec := &specs.Spec{}
-	if err = json.Unmarshal([]byte(ociSpecJSON), ociSpec); err != nil {
-		return nil, err
 	}
 
 	// Handle container mounts
@@ -1868,4 +1864,23 @@ func (k *kataAgent) cleanup(id string) {
 	if err := os.RemoveAll(path); err != nil {
 		k.Logger().WithError(err).Errorf("failed to cleanup vm share path %s", path)
 	}
+}
+
+// convertOCISpec convert `vctypes.CompatOCISpec` to standard OCI spec
+func convertOCISpec(ociSpec *vcTypes.CompatOCISpec) (*specs.Spec, error) {
+	if ociSpec == nil {
+		return nil, errorMissingOCISpec
+	}
+
+	specJSON, err := json.Marshal(ociSpec)
+	if err != nil {
+		return nil, fmt.Errorf("Marshal failed: %v", err)
+	}
+
+	s := &specs.Spec{}
+	if err := json.Unmarshal(specJSON, s); err != nil {
+		return nil, fmt.Errorf("Unmarshal failed: %v", err)
+	}
+
+	return s, nil
 }

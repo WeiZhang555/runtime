@@ -276,7 +276,7 @@ func (s *service) Cleanup(ctx context.Context) (*taskAPI.DeleteResponse, error) 
 		return nil, err
 	}
 
-	containerType, err := ociSpec.ContainerType()
+	containerType, err := oci.ContainerType(&ociSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (s *service) Cleanup(ctx context.Context) (*taskAPI.DeleteResponse, error) 
 			return nil, err
 		}
 	case vc.PodContainer:
-		sandboxID, err := ociSpec.SandboxID()
+		sandboxID, err := oci.SandboxID(&ociSpec)
 		if err != nil {
 			return nil, err
 		}
