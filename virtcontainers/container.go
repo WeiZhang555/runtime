@@ -73,7 +73,7 @@ type ContainerStatus struct {
 	PID       int
 	StartTime time.Time
 	RootFs    string
-	Spec      *vctypes.CompatOCISpec `json:"-"`
+	Spec      *vctypes.CompatOCISpec
 
 	// Annotations allow clients to store arbitrary values,
 	// for example to add additional status values required

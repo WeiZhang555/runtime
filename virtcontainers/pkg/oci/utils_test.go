@@ -24,6 +24,7 @@ import (
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/kata-containers/runtime/virtcontainers/device/config"
 	vcAnnotations "github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
+	vctypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 	"github.com/kata-containers/runtime/virtcontainers/types"
 )
 
@@ -167,7 +168,7 @@ func TestMinimalSandboxConfig(t *testing.T) {
 		},
 	}
 
-	var minimalOCISpec CompatOCISpec
+	var minimalOCISpec vctypes.CompatOCISpec
 
 	//Marshal and unmarshall json to compare  sandboxConfig and expectedSandboxConfig
 	if err := json.Unmarshal([]byte(minimalConfig), &minimalOCISpec); err != nil {
@@ -179,10 +180,6 @@ func TestMinimalSandboxConfig(t *testing.T) {
 			t.Fatal(err)
 		}
 		minimalOCISpec.Process.Capabilities = caps
-	}
-	ociSpecJSON, err := json.Marshal(minimalOCISpec)
-	if err != nil {
-		t.Fatal(err)
 	}
 
 	devInfo := config.DeviceInfo{
@@ -204,7 +201,6 @@ func TestMinimalSandboxConfig(t *testing.T) {
 		ReadonlyRootfs: true,
 		Cmd:            expectedCmd,
 		Annotations: map[string]string{
-			vcAnnotations.ConfigJSONKey:    string(ociSpecJSON),
 			vcAnnotations.BundlePathKey:    tempBundlePath,
 			vcAnnotations.ContainerTypeKey: string(vc.PodSandbox),
 		},
@@ -213,6 +209,7 @@ func TestMinimalSandboxConfig(t *testing.T) {
 		Resources: specs.LinuxResources{Devices: []specs.LinuxDeviceCgroup{
 			{Allow: false, Type: "", Major: (*int64)(nil), Minor: (*int64)(nil), Access: "rwm"},
 		}},
+		Spec: &minimalOCISpec,
 	}
 
 	expectedNetworkConfig := vc.NetworkConfig{}
@@ -231,7 +228,6 @@ func TestMinimalSandboxConfig(t *testing.T) {
 		Containers: []vc.ContainerConfig{expectedContainerConfig},
 
 		Annotations: map[string]string{
-			vcAnnotations.ConfigJSONKey: string(ociSpecJSON),
 			vcAnnotations.BundlePathKey: tempBundlePath,
 		},
 
@@ -276,7 +272,6 @@ func TestStatusToOCIStateSuccessfulWithReadyState(t *testing.T) {
 	}
 
 	containerAnnotations := map[string]string{
-		vcAnnotations.ConfigJSONKey: minimalConfig,
 		vcAnnotations.BundlePathKey: tempBundlePath,
 	}
 
@@ -312,7 +307,6 @@ func TestStatusToOCIStateSuccessfulWithRunningState(t *testing.T) {
 	}
 
 	containerAnnotations := map[string]string{
-		vcAnnotations.ConfigJSONKey: minimalConfig,
 		vcAnnotations.BundlePathKey: tempBundlePath,
 	}
 
@@ -347,7 +341,6 @@ func TestStatusToOCIStateSuccessfulWithStoppedState(t *testing.T) {
 	}
 
 	containerAnnotations := map[string]string{
-		vcAnnotations.ConfigJSONKey: minimalConfig,
 		vcAnnotations.BundlePathKey: tempBundlePath,
 	}
 
@@ -378,7 +371,6 @@ func TestStatusToOCIStateSuccessfulWithNoState(t *testing.T) {
 	testRootFs := "testRootFs"
 
 	containerAnnotations := map[string]string{
-		vcAnnotations.ConfigJSONKey: minimalConfig,
 		vcAnnotations.BundlePathKey: tempBundlePath,
 	}
 
@@ -535,8 +527,8 @@ func TestGetContainerTypeFailure(t *testing.T) {
 	}
 }
 
-func testContainerTypeSuccessful(t *testing.T, ociSpec CompatOCISpec, expected vc.ContainerType) {
-	containerType, err := ociSpec.ContainerType()
+func testContainerTypeSuccessful(t *testing.T, ociSpec vctypes.CompatOCISpec, expected vc.ContainerType) {
+	containerType, err := ContainerType(&ociSpec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -547,7 +539,7 @@ func testContainerTypeSuccessful(t *testing.T, ociSpec CompatOCISpec, expected v
 }
 
 func TestContainerTypePodSandbox(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 
 	ociSpec.Annotations = map[string]string{
 		annotations.ContainerType: annotations.ContainerTypeSandbox,
@@ -557,7 +549,7 @@ func TestContainerTypePodSandbox(t *testing.T) {
 }
 
 func TestContainerTypePodContainer(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 
 	ociSpec.Annotations = map[string]string{
 		annotations.ContainerType: annotations.ContainerTypeContainer,
@@ -567,11 +559,11 @@ func TestContainerTypePodContainer(t *testing.T) {
 }
 
 func TestContainerTypePodSandboxEmptyAnnotation(t *testing.T) {
-	testContainerTypeSuccessful(t, CompatOCISpec{}, vc.PodSandbox)
+	testContainerTypeSuccessful(t, vctypes.CompatOCISpec{}, vc.PodSandbox)
 }
 
 func TestContainerTypeFailure(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 	expected := vc.UnknownContainerType
 	unknownType := "unknown_type"
 
@@ -579,7 +571,7 @@ func TestContainerTypeFailure(t *testing.T) {
 		annotations.ContainerType: unknownType,
 	}
 
-	containerType, err := ociSpec.ContainerType()
+	containerType, err := ContainerType(&ociSpec)
 	if err == nil {
 		t.Fatalf("This test should fail because the container type is %s", unknownType)
 	}
@@ -590,14 +582,14 @@ func TestContainerTypeFailure(t *testing.T) {
 }
 
 func TestSandboxIDSuccessful(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 	testSandboxID := "testSandboxID"
 
 	ociSpec.Annotations = map[string]string{
 		annotations.SandboxID: testSandboxID,
 	}
 
-	sandboxID, err := ociSpec.SandboxID()
+	sandboxID, err := SandboxID(&ociSpec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -608,9 +600,9 @@ func TestSandboxIDSuccessful(t *testing.T) {
 }
 
 func TestSandboxIDFailure(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 
-	sandboxID, err := ociSpec.SandboxID()
+	sandboxID, err := SandboxID(&ociSpec)
 	if err == nil {
 		t.Fatalf("This test should fail because annotations is empty")
 	}
@@ -653,7 +645,7 @@ func TestAddKernelParamInvalid(t *testing.T) {
 }
 
 func TestDeviceTypeFailure(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 
 	invalidDeviceType := "f"
 	ociSpec.Linux = &specs.Linux{}
@@ -678,7 +670,7 @@ func TestContains(t *testing.T) {
 }
 
 func TestDevicePathEmpty(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 
 	ociSpec.Linux = &specs.Linux{}
 	ociSpec.Linux.Devices = []specs.LinuxDevice{
@@ -694,9 +686,9 @@ func TestDevicePathEmpty(t *testing.T) {
 }
 
 func TestContainerCapabilities(t *testing.T) {
-	var ociSpec CompatOCISpec
+	var ociSpec vctypes.CompatOCISpec
 
-	ociSpec.Process = &CompatOCIProcess{}
+	ociSpec.Process = &vctypes.CompatOCIProcess{}
 	ociSpec.Process.Capabilities = map[string]interface{}{
 		"bounding":    []interface{}{"CAP_KILL"},
 		"effective":   []interface{}{"CAP_KILL", "CAP_LEASE"},
@@ -736,9 +728,9 @@ func TestContainerCapabilities(t *testing.T) {
 
 // use specs.Spec to decode the spec, the content of capabilities is [] string
 func TestCompatOCISpecWithArray(t *testing.T) {
-	compatOCISpec := CompatOCISpec{}
+	compatOCISpec := vctypes.CompatOCISpec{}
 	err := json.Unmarshal([]byte(capabilitiesSpecArray), &compatOCISpec)
-	assert.Nil(t, err, "use CompatOCISpec to decode capabilitiesSpecArray failed")
+	assert.Nil(t, err, "use vctypes.CompatOCISpec to decode capabilitiesSpecArray failed")
 
 	ociSpecJSON, err := json.Marshal(compatOCISpec)
 	assert.Nil(t, err, "encode compatOCISpec failed")
@@ -763,9 +755,9 @@ func TestCompatOCISpecWithArray(t *testing.T) {
 
 // use specs.Spec to decode the spec, the content of capabilities is struct
 func TestCompatOCISpecWithStruct(t *testing.T) {
-	compatOCISpec := CompatOCISpec{}
+	compatOCISpec := vctypes.CompatOCISpec{}
 	err := json.Unmarshal([]byte(capabilitiesSpecStruct), &compatOCISpec)
-	assert.Nil(t, err, "use CompatOCISpec to decode capabilitiesSpecStruct failed")
+	assert.Nil(t, err, "use vctypes.CompatOCISpec to decode capabilitiesSpecStruct failed")
 
 	ociSpecJSON, err := json.Marshal(compatOCISpec)
 	assert.Nil(t, err, "encode compatOCISpec failed")

@@ -637,19 +637,3 @@ func EnvVars(envs []string) ([]types.EnvVar, error) {
 
 	return envVars, nil
 }
-
-// GetOCIConfig returns an OCI spec configuration from the annotation
-// stored into the container status.
-/*func GetOCIConfig(status vc.ContainerStatus) (vctypes.CompatOCISpec, error) {
-	ociConfigStr, ok := status.Annotations[vcAnnotations.ConfigJSONKey]
-	if !ok {
-		return vctypes.CompatOCISpec{}, fmt.Errorf("Annotation[%s] not found", vcAnnotations.ConfigJSONKey)
-	}
-
-	var ociSpec vctypes.CompatOCISpec
-	if err := json.Unmarshal([]byte(ociConfigStr), &ociSpec); err != nil {
-		return vctypes.CompatOCISpec{}, err
-	}
-
-	return ociSpec, nil
-}*/
