@@ -1129,6 +1129,7 @@ func TestRemoveContainerSuccess(t *testing.T) {
 func TestCreateContainer(t *testing.T) {
 	s, err := testCreateSandbox(t, testSandboxID, MockHypervisor, newHypervisorConfig(nil, nil), NoopAgentType, NetworkConfig{}, nil, nil)
 	assert.Nil(t, err, "VirtContainers should not allow empty sandboxes")
+	assert.NotNil(t, s)
 	defer cleanUp()
 
 	contID := "999"
@@ -1176,6 +1177,10 @@ func TestStartContainer(t *testing.T) {
 
 func TestStatusContainer(t *testing.T) {
 	s, err := testCreateSandbox(t, testSandboxID, MockHypervisor, newHypervisorConfig(nil, nil), NoopAgentType, NetworkConfig{}, nil, nil)
+	if s == nil || err != nil {
+		t.Fatalf("=======%s\n", err)
+		return
+	}
 	assert.Nil(t, err, "VirtContainers should not allow empty sandboxes")
 	defer cleanUp()
 
@@ -1197,6 +1202,9 @@ func TestStatusContainer(t *testing.T) {
 func TestStatusSandbox(t *testing.T) {
 	s, err := testCreateSandbox(t, testSandboxID, MockHypervisor, newHypervisorConfig(nil, nil), NoopAgentType, NetworkConfig{}, nil, nil)
 	assert.Nil(t, err, "VirtContainers should not allow empty sandboxes")
+	if err != nil {
+		t.Fatalf("=======%s\n", err)
+	}
 	defer cleanUp()
 
 	s.Status()

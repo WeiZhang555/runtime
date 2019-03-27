@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/mock"
 	vcTypes "github.com/kata-containers/runtime/virtcontainers/pkg/types"
 	"github.com/kata-containers/runtime/virtcontainers/store"
@@ -33,15 +32,13 @@ const (
 )
 
 var sandboxAnnotations = map[string]string{
-	"sandbox.foo":             "sandbox.bar",
-	"sandbox.hello":           "sandbox.world",
-	annotations.ConfigJSONKey: `{"linux":{"resources":{}}}`,
+	"sandbox.foo":   "sandbox.bar",
+	"sandbox.hello": "sandbox.world",
 }
 
 var containerAnnotations = map[string]string{
-	"container.foo":           "container.bar",
-	"container.hello":         "container.world",
-	annotations.ConfigJSONKey: `{"linux":{"resources":{}}}`,
+	"container.foo":   "container.bar",
+	"container.hello": "container.world",
 }
 
 func newBasicTestCmd() types.Cmd {
@@ -64,9 +61,16 @@ func newBasicTestCmd() types.Cmd {
 func newTestSandboxConfigNoop() SandboxConfig {
 	// Define the container command and bundle.
 	container := ContainerConfig{
-		ID:          containerID,
-		RootFs:      filepath.Join(testDir, testBundle),
-		Cmd:         newBasicTestCmd(),
+		ID:     containerID,
+		RootFs: filepath.Join(testDir, testBundle),
+		Cmd:    newBasicTestCmd(),
+		Spec: &vcTypes.CompatOCISpec{
+			Spec: specs.Spec{
+				Linux: &specs.Linux{
+					Resources: &specs.LinuxResources{},
+				},
+			},
+		},
 		Annotations: containerAnnotations,
 	}
 
@@ -97,9 +101,16 @@ func newTestSandboxConfigNoop() SandboxConfig {
 func newTestSandboxConfigHyperstartAgent() SandboxConfig {
 	// Define the container command and bundle.
 	container := ContainerConfig{
-		ID:          containerID,
-		RootFs:      filepath.Join(testDir, testBundle),
-		Cmd:         newBasicTestCmd(),
+		ID:     containerID,
+		RootFs: filepath.Join(testDir, testBundle),
+		Cmd:    newBasicTestCmd(),
+		Spec: &vcTypes.CompatOCISpec{
+			Spec: specs.Spec{
+				Linux: &specs.Linux{
+					Resources: &specs.LinuxResources{},
+				},
+			},
+		},
 		Annotations: containerAnnotations,
 	}
 
@@ -135,9 +146,16 @@ func newTestSandboxConfigHyperstartAgent() SandboxConfig {
 func newTestSandboxConfigHyperstartAgentDefaultNetwork() SandboxConfig {
 	// Define the container command and bundle.
 	container := ContainerConfig{
-		ID:          containerID,
-		RootFs:      filepath.Join(testDir, testBundle),
-		Cmd:         newBasicTestCmd(),
+		ID:     containerID,
+		RootFs: filepath.Join(testDir, testBundle),
+		Cmd:    newBasicTestCmd(),
+		Spec: &vcTypes.CompatOCISpec{
+			Spec: specs.Spec{
+				Linux: &specs.Linux{
+					Resources: &specs.LinuxResources{},
+				},
+			},
+		},
 		Annotations: containerAnnotations,
 	}
 
@@ -891,8 +909,15 @@ func TestStatusSandboxSuccessfulStateReady(t *testing.T) {
 					State:      types.StateReady,
 					CgroupPath: utils.DefaultCgroupPath,
 				},
-				PID:         0,
-				RootFs:      filepath.Join(testDir, testBundle),
+				PID:    0,
+				RootFs: filepath.Join(testDir, testBundle),
+				Spec: &vcTypes.CompatOCISpec{
+					Spec: specs.Spec{
+						Linux: &specs.Linux{
+							Resources: &specs.LinuxResources{},
+						},
+					},
+				},
 				Annotations: containerAnnotations,
 			},
 		},
@@ -950,8 +975,15 @@ func TestStatusSandboxSuccessfulStateRunning(t *testing.T) {
 					State:      types.StateRunning,
 					CgroupPath: utils.DefaultCgroupPath,
 				},
-				PID:         0,
-				RootFs:      filepath.Join(testDir, testBundle),
+				PID:    0,
+				RootFs: filepath.Join(testDir, testBundle),
+				Spec: &vcTypes.CompatOCISpec{
+					Spec: specs.Spec{
+						Linux: &specs.Linux{
+							Resources: &specs.LinuxResources{},
+						},
+					},
+				},
 				Annotations: containerAnnotations,
 			},
 		},
@@ -1025,9 +1057,16 @@ func TestStatusPodSandboxFailingFetchSandboxState(t *testing.T) {
 func newTestContainerConfigNoop(contID string) ContainerConfig {
 	// Define the container command and bundle.
 	container := ContainerConfig{
-		ID:          contID,
-		RootFs:      filepath.Join(testDir, testBundle),
-		Cmd:         newBasicTestCmd(),
+		ID:     contID,
+		RootFs: filepath.Join(testDir, testBundle),
+		Cmd:    newBasicTestCmd(),
+		Spec: &vcTypes.CompatOCISpec{
+			Spec: specs.Spec{
+				Linux: &specs.Linux{
+					Resources: &specs.LinuxResources{},
+				},
+			},
+		},
 		Annotations: containerAnnotations,
 	}
 
@@ -1774,8 +1813,15 @@ func TestStatusContainerStateReady(t *testing.T) {
 			State:      types.StateReady,
 			CgroupPath: utils.DefaultCgroupPath,
 		},
-		PID:         0,
-		RootFs:      filepath.Join(testDir, testBundle),
+		PID:    0,
+		RootFs: filepath.Join(testDir, testBundle),
+		Spec: &vcTypes.CompatOCISpec{
+			Spec: specs.Spec{
+				Linux: &specs.Linux{
+					Resources: &specs.LinuxResources{},
+				},
+			},
+		},
 		Annotations: containerAnnotations,
 	}
 
@@ -1850,8 +1896,15 @@ func TestStatusContainerStateRunning(t *testing.T) {
 			State:      types.StateRunning,
 			CgroupPath: utils.DefaultCgroupPath,
 		},
-		PID:         0,
-		RootFs:      filepath.Join(testDir, testBundle),
+		PID:    0,
+		RootFs: filepath.Join(testDir, testBundle),
+		Spec: &vcTypes.CompatOCISpec{
+			Spec: specs.Spec{
+				Linux: &specs.Linux{
+					Resources: &specs.LinuxResources{},
+				},
+			},
+		},
 		Annotations: containerAnnotations,
 	}
 
@@ -1932,7 +1985,10 @@ func TestStatsContainer(t *testing.T) {
 	config := newTestSandboxConfigNoop()
 	p, err := CreateSandbox(ctx, config, nil)
 	assert.NoError(err)
-	assert.NotNil(p)
+	if p == nil {
+		assert.FailNow("CreateSandbox failed")
+		return
+	}
 
 	p, err = StartSandbox(ctx, p.ID())
 	if p == nil || err != nil {
@@ -2060,6 +2116,13 @@ func createNewContainerConfigs(numOfContainers int) []ContainerConfig {
 			ID:     fmt.Sprintf("%d", i),
 			RootFs: rootFs,
 			Cmd:    cmd,
+			Spec: &vcTypes.CompatOCISpec{
+				Spec: specs.Spec{
+					Linux: &specs.Linux{
+						Resources: &specs.LinuxResources{},
+					},
+				},
+			},
 		}
 
 		contConfigs = append(contConfigs, contConfig)
