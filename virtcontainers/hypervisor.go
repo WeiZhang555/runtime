@@ -726,7 +726,7 @@ func generateVMSocket(id string, useVsock bool) (interface{}, error) {
 // hypervisor is the virtcontainers hypervisor interface.
 // The default hypervisor implementation is Qemu.
 type hypervisor interface {
-	createSandbox(ctx context.Context, id string, networkNS NetworkNamespace, hypervisorConfig *HypervisorConfig, store *store.VCStore, stateful bool) error
+	createSandbox(ctx context.Context, id string, networkNS NetworkNamespace, hypervisorConfig *HypervisorConfig, stateful bool) error
 	startSandbox(timeout int) error
 	stopSandbox() error
 	pauseSandbox() error
@@ -746,7 +746,7 @@ type hypervisor interface {
 	// getPids returns a slice of hypervisor related process ids.
 	// The hypervisor pid must be put at index 0.
 	getPids() []int
-	fromGrpc(ctx context.Context, hypervisorConfig *HypervisorConfig, store *store.VCStore, j []byte) error
+	fromGrpc(ctx context.Context, hypervisorConfig *HypervisorConfig, j []byte) error
 	toGrpc() ([]byte, error)
 	check() error
 

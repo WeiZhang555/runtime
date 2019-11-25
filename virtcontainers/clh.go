@@ -78,7 +78,6 @@ func (s *CloudHypervisorState) reset() {
 type cloudHypervisor struct {
 	id         string
 	state      CloudHypervisorState
-	store      *store.VCStore
 	config     HypervisorConfig
 	ctx        context.Context
 	socketPath string
@@ -109,7 +108,7 @@ var clhDebugKernelParams = []Param{
 //
 //###########################################################
 
-func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networkNS NetworkNamespace, hypervisorConfig *HypervisorConfig, vcStore *store.VCStore, stateful bool) error {
+func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networkNS NetworkNamespace, hypervisorConfig *HypervisorConfig, stateful bool) error {
 	clh.ctx = ctx
 
 	span, _ := clh.trace("createSandbox")
@@ -121,7 +120,6 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 	}
 
 	clh.id = id
-	clh.store = vcStore
 	clh.config = *hypervisorConfig
 	clh.state.state = clhNotReady
 
@@ -149,12 +147,6 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 	clh.socketPath = socketPath
 
 	clh.Logger().WithField("function", "createSandbox").Info("creating Sandbox")
-
-	// No need to return an error from there since there might be nothing
-	// to fetch if this is the first time the hypervisor is created.
-	if err := clh.store.Load(store.Hypervisor, &clh.state); err != nil {
-		clh.Logger().WithField("function", "createSandbox").WithError(err).Info("No info could be fetched")
-	}
 
 	// Set initial memomory size of the cloud hypervisor
 	clh.cliBuilder.SetMemory(&CLIMemory{
@@ -289,9 +281,6 @@ func (clh *cloudHypervisor) startSandbox(timeout int) error {
 		if err != nil {
 			return err
 		}
-		if err = clh.storeState(); err != nil {
-			return err
-		}
 	} else {
 		return errors.New("cloud-hypervisor only supports virtio based file sharing")
 	}
@@ -309,7 +298,6 @@ func (clh *cloudHypervisor) startSandbox(timeout int) error {
 
 	clh.state.PID = pid
 	clh.state.state = clhReady
-	clh.storeState()
 
 	return nil
 }
@@ -386,7 +374,7 @@ func (clh *cloudHypervisor) stopSandbox() (err error) {
 	return clh.terminate()
 }
 
-func (clh *cloudHypervisor) fromGrpc(ctx context.Context, hypervisorConfig *HypervisorConfig, store *store.VCStore, j []byte) error {
+func (clh *cloudHypervisor) fromGrpc(ctx context.Context, hypervisorConfig *HypervisorConfig, j []byte) error {
 	return errors.New("cloudHypervisor is not supported by VM cache")
 }
 
@@ -397,6 +385,7 @@ func (clh *cloudHypervisor) toGrpc() ([]byte, error) {
 func (clh *cloudHypervisor) save() (s persistapi.HypervisorState) {
 	s.Pid = clh.state.PID
 	s.Type = string(ClhHypervisor)
+	s.VirtiofsdPid = clh.state.VirtiofsdPID
 	return
 }
 
@@ -539,7 +528,6 @@ func (clh *cloudHypervisor) terminate() (err error) {
 
 func (clh *cloudHypervisor) reset() {
 	clh.state.reset()
-	clh.storeState()
 }
 
 func (clh *cloudHypervisor) generateSocket(id string, useVsock bool) (interface{}, error) {
@@ -592,7 +580,6 @@ func (clh *cloudHypervisor) setupVirtiofsd(timeout int) (remain int, err error) 
 			clh.state.VirtiofsdPID = cmd.Process.Pid
 
 		}
-		clh.storeState()
 	}()
 
 	// Wait for socket to become available
@@ -675,7 +662,6 @@ func (clh *cloudHypervisor) shutdownVirtiofsd() (err error) {
 
 	if err != nil {
 		clh.state.VirtiofsdPID = 0
-		clh.storeState()
 	}
 	return err
 
@@ -699,15 +685,6 @@ func (clh *cloudHypervisor) apiSocketPath(id string) (string, error) {
 
 func (clh *cloudHypervisor) logFilePath(id string) (string, error) {
 	return utils.BuildSocketPath(store.RunVMStoragePath(), id, clhLogFile)
-}
-
-func (clh *cloudHypervisor) storeState() error {
-	if clh.store != nil {
-		if err := clh.store.Store(store.Hypervisor, clh.state); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (clh *cloudHypervisor) waitVMM(timeout int) error {
